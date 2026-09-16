@@ -1065,8 +1065,11 @@ class UsageLog:
         return bool(self.cfg().get("enabled"))
 
     def path(self) -> Path:
-        return Path(os.path.expanduser(str(self.cfg().get("path") or
-                                           "~/.hermes/llm-relay/usage.jsonl")))
+        # 没配 path 时默认与 config.json 同目录（不假设任何固定个人路径）。
+        raw = self.cfg().get("path")
+        if not raw:
+            raw = Path(self.relay.config_path).resolve().parent / "usage.jsonl"
+        return Path(os.path.expanduser(str(raw)))
 
     def record(self, row: dict) -> None:
         """写一行。关闭时完全不写；任何异常都不影响主流程（只是记不上用量）。"""
@@ -1516,6 +1519,10 @@ def validate_config(cfg: object, keys_raw: dict | None = None) -> tuple[dict, li
 
     def unknown(prefix: str, obj: dict, allowed: list[str]) -> None:
         for k in list(obj):
+            # 以 `_` 开头的键是文档/注释（config.example.json 就靠它写说明）→ 静默忽略，不算问题
+            if isinstance(k, str) and k.startswith("_"):
+                obj.pop(k, None)
+                continue
             if k not in allowed:
                 add(f"{prefix}.{k}", f"已知字段之一（{', '.join(allowed)}）", k,
                     "忽略该字段", "字段名拼写错误或已废弃")

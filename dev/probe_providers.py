@@ -19,7 +19,9 @@ import time
 import urllib.error
 import urllib.request
 
-KEYS_FILE = pathlib.Path.home() / ".hermes/llm-relay/keys.env"
+# 密钥文件：默认取仓库根目录的 keys.env，可用 LLM_RELAY_KEYS 覆盖（不假设任何固定个人路径）
+KEYS_FILE = pathlib.Path(os.getenv("LLM_RELAY_KEYS")
+                         or pathlib.Path(__file__).resolve().parent.parent / "keys.env")
 # 本地回环/外网都直连，避免 ClashX 把请求吃掉（本项目反复踩过的坑）
 OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 # Cloudflare(zen) 会按 UA 拦：python-urllib 默认 UA 直接吃 403 / error code 1010。

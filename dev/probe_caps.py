@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import sys
 import threading
@@ -73,7 +74,9 @@ PROVIDERS = {
 
 def load_keys() -> dict[str, str]:
     keys: dict[str, str] = {}
-    f = pathlib.Path.home() / ".hermes/llm-relay/keys.env"
+    # 密钥文件：默认取仓库根目录的 keys.env，可用 LLM_RELAY_KEYS 覆盖（不假设任何固定个人路径）
+    f = pathlib.Path(os.getenv("LLM_RELAY_KEYS")
+                     or pathlib.Path(__file__).resolve().parent.parent / "keys.env")
     if f.exists():
         for line in f.read_text().splitlines():
             line = line.strip()

@@ -24,8 +24,11 @@ python3 llm_relay.py
 After editing the configuration, validate it:
 
 ```sh
-python3 llm_relay.py --check --config config.example.json
+python3 llm_relay.py --check
 ```
+
+(`--check` validates your `config.json` and prints the candidate order it would use; add
+`--config config.example.json` to validate the shipped example instead.)
 
 ## Testing requirements (merge gate)
 

@@ -41,7 +41,8 @@
   },
   "usage_log": {
     "enabled": true,
-    "path": "~/.hermes/llm-relay/usage.jsonl",
+    "path": "",
+    "_comment": "path 留空 = 与 config.json 同目录的 usage.jsonl（也可写绝对路径或 ~/...）。每个请求结束（含失败与重试）追加一行 JSON，只记 key 序号与指纹、永不记明文；超 max_mb 轮转保留 keep 份；metrics=true 才会开 Prometheus /metrics（默认关）。",
     "max_mb": 20,
     "keep": 5
   },

@@ -1,11 +1,12 @@
 # llm-relay
 
+[English](README.md) ｜ **简体中文**
+
 **一个文件、零依赖，把一堆厂商和它们的免费额度收拢成一条 OpenAI 兼容接口。**
 
+[![CI](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml)
 ![license: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![python: 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
-
-[English →](README.md)
 
 `llm-relay` 是**单文件、纯标准库**的 OpenAI 兼容中继：对外只暴露一个
 `POST /v1/chat/completions`，对内把「多 provider、每个 provider 多把 key、key 级限流、

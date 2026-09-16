@@ -1,5 +1,7 @@
 # llm-relay
 
+**English** ｜ [简体中文](README.zh-CN.md)
+
 **One file, no dependencies, one OpenAI-compatible endpoint in front of many providers and their free tiers.**
 
 [![CI](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml)

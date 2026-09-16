@@ -1795,7 +1795,7 @@ class SmokeTest(unittest.TestCase):
             self.assertNotIn("nvapi-", vw)
         # 远程（非 loopback）打开设置 tab：重启区块必须禁用并写明原因
         if not LAN.startswith("127."):
-            key = Path(os.path.expanduser("~/.hermes/llm-relay/access-key.txt")).read_text(
+            key = Path(os.path.expanduser(dash.DEFAULT_KEY_FILE)).read_text(
                 encoding="utf-8").strip()
             port = base.rsplit(":", 1)[-1]
             remote_url = f"http://{LAN}:{port}/?k={key}&snapshot=1&tab=settings#settings"
@@ -1860,7 +1860,7 @@ class SmokeTest(unittest.TestCase):
         self.assertEqual(ru["today"]["avg_ms"], 1050, ru)
         self.assertEqual(ru["today"]["rate"], 0.5, ru)
         self.assertEqual(data["bank"], dash.hindsight_bank(),
-                         "bank_id 必须与 ~/.hermes/hindsight/config.json 的只读读法一致")
+                         "bank_id 必须与上游集成配置（HS_DASH_CONFIG_JSON）的只读读法一致")
 
         # 上游挂掉：把 8988 / 9999 指到一个没人监听的端口 —— 对应组必须是 {"error": ...}，整体仍 200
         dead = f"http://127.0.0.1:{closed_port()}"
@@ -2218,7 +2218,7 @@ def ensure_live_dashboard() -> str:
         return LIVE_DASH
     dash.RELAY_BASE = LIVE_RELAY
     dash.Handler.access_key = dash.load_or_create_access_key(
-        os.path.expanduser("~/.hermes/llm-relay/access-key.txt"))
+        os.path.expanduser(dash.DEFAULT_KEY_FILE))
     srv = dash.ThreadingHTTPServer(("0.0.0.0", 9111), dash.Handler)
     srv.daemon_threads = True
     threading.Thread(target=srv.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True).start()

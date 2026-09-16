@@ -44,7 +44,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RELAY_BASE = os.getenv("LLM_RELAY_BASE", "http://127.0.0.1:9110").rstrip("/")
-DEFAULT_KEY_FILE = "~/.hermes/llm-relay/access-key.txt"
+# 访问密钥文件：可用 LLM_RELAY_KEY_FILE 覆盖；默认落在脚本所在目录（部署在哪就落在哪，
+# 不假设任何固定个人路径）。
+DEFAULT_KEY_FILE = os.getenv("LLM_RELAY_KEY_FILE") or os.path.join(HERE, "access-key.txt")
 KEY_COOKIE = "llm_relay_key"
 
 # ---- 面板联动（方案 C）：Hindsight 侧的三个只读上游 + 深链接目标 ----
@@ -56,9 +58,9 @@ HINDSIGHT_DASH_BASE = os.getenv("HINDSIGHT_DASH_BASE", "http://127.0.0.1:8990").
 # 官方 CP 的 /api/* 走 access_key 会话，服务端只读取数需要同一把钥匙；
 # 只读文件、只在本机回环使用，绝不回显明文（报告/日志里只出现路径与指纹）。
 HINDSIGHT_CONFIG_JSON = os.path.expanduser(
-    os.getenv("HS_DASH_CONFIG_JSON", "~/.hermes/hindsight/config.json"))
+    os.getenv("HS_DASH_CONFIG_JSON", "~/.hindsight/config.json"))
 HINDSIGHT_CP_KEY_FILE = os.path.expanduser(
-    os.getenv("HINDSIGHT_CP_KEY_FILE", "~/.hermes/hindsight/access-key.txt"))
+    os.getenv("HINDSIGHT_CP_KEY_FILE", "~/.hindsight/access-key.txt"))
 HINDSIGHT_CP_ACCESS_KEY = os.getenv("HINDSIGHT_CP_ACCESS_KEY", "")
 
 # 关键：绕过系统代理。ClashX 之类会把回环请求接管成 502（本项目反复踩过的坑）。
@@ -120,7 +122,7 @@ def load_or_create_access_key(path: str) -> str:
 
 # ---------------------------------------------------------------- 外观（背景图）
 # 面板自己拥有的 UI 偏好走单独的 ui.json，**不写进 config.json**（那里有实测调参的红线）。
-# 存放目录由 --key-file 的目录决定：生产落在 ~/.hermes/llm-relay/，自检落在临时目录，不污染仓库。
+# 存放目录由 --key-file 的目录决定：生产落在部署目录，自检落在临时目录，不污染仓库。
 UI_DIR = os.path.dirname(resolve_key_path(DEFAULT_KEY_FILE))
 BG_MAX_BYTES = 8 * 1024 * 1024
 BG_TYPES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
@@ -367,7 +369,7 @@ def _hs_json(url: str, timeout: float = 8.0, cookie: str = "") -> tuple[int, obj
 
 
 def hindsight_bank() -> str:
-    """bank_id 从 ~/.hermes/hindsight/config.json 只读读出（读不到就退回 default）。"""
+    """bank_id 从上游集成配置（HS_DASH_CONFIG_JSON）只读读出（读不到就退回 default）。"""
     try:
         with open(HINDSIGHT_CONFIG_JSON, "r", encoding="utf-8") as fh:
             cfg = json.load(fh)
@@ -651,7 +653,7 @@ code{background:#0d1117;border:1px solid #30363d;border-radius:6px;padding:2px 6
 </style></head><body><div class="card">
 <h1>llm-relay 管理面板</h1>
 <p>这个面板可以从局域网/手机访问，所以需要访问密钥。</p>
-<p>请在网址后面加上 <code>?k=你的密钥</code>（密钥在 <code>~/.hermes/llm-relay/access-key.txt</code>），
+<p>请在网址后面加上 <code>?k=你的密钥</code>（密钥在部署目录下的 <code>access-key.txt</code>，首次启动自动生成），
 打开一次之后浏览器会记住 30 天。</p>
 <p>本机（loopback）访问免密。</p>
 </div></body></html>"""
@@ -943,7 +945,7 @@ function chainModels(){
 }
 function renderChain(){
   const models=chainModels();
-  let html='<h2>候选链<span class="q" title="上移/下移会调 /admin/reorder：中转站按给定顺序重写 chain（1..N 连续）后立即热重载，不用重启 Hindsight。">?</span></h2>';
+  let html='<h2>候选链<span class="q" title="上移/下移会调 /admin/reorder：中转站按给定顺序重写 chain（1..N 连续）后立即热重载，不用重启调用方。">?</span></h2>';
   if(!models.length)html+='<div class="card">没有候选（检查 keys.env 与 config.json）。</div>';
   models.forEach((m,i)=>{
     const bad429=m.n429>0, cool=m.ncool.length>0;
@@ -1706,7 +1708,7 @@ function renderSettings(){
   // ---- 外观 · 背景图（面板自己的偏好：写 ui.json 与 assets/，不动 config.json）----
   const bg=((DATA.ui||{}).ui||{}).background||{};
   const bgOff=S.remote?"disabled":"";
-  html+='<h2>外观 · 背景<span class="q" title="壁纸只影响面板外观：配置存在 ~/.hermes/llm-relay/ui.json，图片存在同目录 assets/。'+
+  html+='<h2>外观 · 背景<span class="q" title="壁纸只影响面板外观：配置存在部署目录下的 ui.json，图片存在同目录 assets/。'+
     '**不写进 config.json**（那里的 chain/超时/rpm 是实测调参，有红线）。"></span></h2><div class="card">'+
     '<div class="kv">'+(bg.file?('当前壁纸：<b>'+esc(bg.file)+'</b>'):'当前没有壁纸（纯色背景）')+
     ' ｜ 遮罩 '+esc(String(bg.overlay))+'% ｜ 模糊 '+esc(String(bg.blur))+'px</div>'+

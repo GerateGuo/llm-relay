@@ -35,13 +35,16 @@ import urllib.request
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# 本脚本既可能躺在仓库根（内部布局），也可能躺在 dev/ 下（公开树布局）：以「哪一层有 llm_relay.py」为准。
+ROOT = HERE.parent if (HERE.parent / "llm_relay.py").exists() else HERE
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 
 import llm_relay                                              # noqa: E402
 from mock_provider import MockProvider                        # noqa: E402
 
 _spec = importlib.util.spec_from_file_location("llm_relay_dashboard",
-                                               HERE / "llm-relay-dashboard.py")
+                                               ROOT / "llm-relay-dashboard.py")
 dash = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(dash)
 
@@ -56,8 +59,8 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 OPENER_NOREDIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
-DOCS = HERE / "docs"
-CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+DOCS = ROOT / "docs"
+CHROME = os.environ.get("CHROME", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome")
 LIVE_RELAY = "http://127.0.0.1:9110"
 LIVE_DASH = "http://127.0.0.1:9111"
 

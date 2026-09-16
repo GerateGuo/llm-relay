@@ -240,7 +240,8 @@ python3 scripts/sanitize_check.py                  # 个人路径 / 明文密钥
 
 `llm-relay-dashboard.py` 渲染一个自包含的单页（无 CDN、无框架、不发起外部请求）：
 
-- **总览 / 候选链 / Key 池 / 模型 / 请求日志 / 用量 / 能力矩阵 / 调用方 / 设置 / 外观** 十个 tab，
+- **九个 tab**：概览 / 链路 / Key 池 / 请求日志 / 用量统计 / 调用方 / 能力矩阵 / 设置
+  （外观·背景图在「设置」里）；只有在 `integrations.upstream` 配置后才会多出「上游」tab。
   数据都经回环从运行中的中继实时读。
 - **密钥门**：本机免密；局域网/手机访问要带 `?k=<密钥>`，之后用 30 天 cookie 记住。
   密钥文件首次启动自动生成，权限 600。
@@ -251,6 +252,28 @@ python3 scripts/sanitize_check.py                  # 个人路径 / 明文密钥
   能做什么，而不是靠名字猜。
 
 只想要一个轻量状态页、不想要面板，中继自己在 `/` 提供的那个就够。
+
+## 截图
+
+`docs/` 下的图全部由 [`dev/make_demo_shots.py`](dev/make_demo_shots.py) 用**合成数据**生成：
+进程内起两个假上游（一个正常、一个专回 429）+ 一次性端口上的中继 + 临时面板，配置里的
+provider 就叫 `demo-alpha` / `demo-beta`。**不涉及任何真实厂商、密钥或部署**。
+
+| 概览 | 链路 |
+|---|---|
+| ![overview](docs/dashboard-overview.png) | ![chain](docs/dashboard-chain.png) |
+| **Key 池** | **请求日志** |
+| ![keys](docs/dashboard-keys.png) | ![logs](docs/dashboard-logs.png) |
+| **用量统计** | **调用方** |
+| ![usage](docs/dashboard-usage.png) | ![callers](docs/dashboard-callers.png) |
+| **能力矩阵** | **设置** |
+| ![caps](docs/dashboard-caps.png) | ![settings](docs/dashboard-settings.png) |
+
+窄屏那张（`docs/dashboard-overview-narrow-480.png`）来自 480px 的无头 Chrome 窗口；Chrome 的
+CSS 视口有 ~500px 下限，所以它验证的是 `max-width: 560px` 那套响应式布局（表格转卡片）。
+
+重出：`python3 dev/make_demo_shots.py`（需要无头 Chrome；macOS 用默认路径，其它平台设
+`CHROME=/path/to/chrome`）。
 
 ## 测试
 

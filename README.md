@@ -259,8 +259,9 @@ bypasses route resolution and consumes no caller quota.
 `llm-relay-dashboard.py` renders a single self-contained page (no CDN, no framework, no external
 requests):
 
-- **Overview / chain / keys / models / requests / usage / capability matrix / callers / settings /
-  appearance** — each tab reads live from the relay over loopback.
+- **One page, nine tabs**: overview, chain, key pool, request log, usage, callers, capability
+  matrix and settings (appearance/background lives inside settings). A tenth *upstream* tab appears
+  only when `integrations.upstream` is configured. Every tab reads live from the relay over loopback.
 - **Access key gate.** Loopback is password-less; a LAN/mobile visitor must supply `?k=<key>`, which
   then sticks as a 30-day cookie. The key file is generated on first start with mode 600.
 - **Remote is read-only.** Every write path (config patch, key management, restart) is rejected from
@@ -271,6 +272,30 @@ requests):
   can see which model actually does what instead of trusting a name.
 
 The relay itself serves a much smaller status page at `/` if you do not want the dashboard.
+
+## Screenshots
+
+Every image under `docs/` is generated from **synthetic data** by
+[`dev/make_demo_shots.py`](dev/make_demo_shots.py): two in-process mock upstreams (one healthy, one
+answering 429), a relay on a throwaway port and a temporary dashboard, driven by a throwaway config
+whose providers are `demo-alpha` / `demo-beta`. No real provider, key or deployment is involved.
+
+| overview | candidate chain |
+|---|---|
+| ![overview](docs/dashboard-overview.png) | ![chain](docs/dashboard-chain.png) |
+| **key pool** | **request log** |
+| ![keys](docs/dashboard-keys.png) | ![logs](docs/dashboard-logs.png) |
+| **usage** | **callers** |
+| ![usage](docs/dashboard-usage.png) | ![callers](docs/dashboard-callers.png) |
+| **capability matrix** | **settings** |
+| ![caps](docs/dashboard-caps.png) | ![settings](docs/dashboard-settings.png) |
+
+The narrow shot (`docs/dashboard-overview-narrow-480.png`) comes from a headless Chrome window of
+480 px; Chrome's CSS viewport floor is ~500 px, which still exercises the `max-width: 560px`
+responsive layout (tables become cards).
+
+Regenerate them with `python3 dev/make_demo_shots.py` (needs headless Chrome; on macOS the default
+path is used, override with `CHROME=/path/to/chrome`).
 
 ## Testing
 

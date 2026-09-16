@@ -48,8 +48,11 @@ RULES: list[tuple[re.Pattern, str]] = [
 ]
 NAME_RE = re.compile("gera" + "te|GerateGuo", re.I)
 # 公开仓库地址/署名白名单：同一行里 `gerate` 紧跟在公开代码托管域名后面就放行。
+# 徽章同理：img.shields.io 的徽章 URL 必须内嵌 owner/repo（`img.shields.io/<平台>/.../<owner>`），
+# 那是指向**公开仓**的地址，不是个人痕迹 —— 不白名单掉它就只能砍掉徽章。
 NAME_OK_RE = re.compile(
-    r"(github\.com|gitlab\.com|gitee\.com|bitbucket\.org)/" + "gera" + "te", re.I)
+    r"(github\.com|gitlab\.com|gitee\.com|bitbucket\.org)/" + "gera" + "te"
+    + r"|img\.shields\.io/[^\s)\"']*" + "gera" + "te", re.I)
 SECRET_RULE_PREFIX = "疑似明文 key"
 # 假密钥/脱敏自检的白名单构造（每条都会在 --verbose 里打印原因）
 ALLOW_MARKERS = ("FAKE", "assertNotIn", "re.findall", ".count(", "_KEY_PAT")

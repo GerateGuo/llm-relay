@@ -1,0 +1,13 @@
+{
+  "integrations": {
+    "upstream": {
+      "label": "Hindsight",
+      "env_prefix": "HINDSIGHT_API_LLM_",
+      "usage_alias": "hindsight",
+      "health_url": "http://127.0.0.1:8988/health",
+      "control_plane_url": "http://127.0.0.1:9999",
+      "start_script": "~/.hermes/scripts/hindsight-mac-start.sh",
+      "rollback_script": "~/.hermes/llm-relay/examples/hindsight/rollback.sh"
+    }
+  }
+}

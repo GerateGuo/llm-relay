@@ -1,0 +1,22 @@
+# 密钥与运行时数据绝不入库
+keys.env
+*.key
+access-key.txt
+# 真实配置只留本机；入库的模板是 config.example.json（python3 llm_relay.py --init 生成 config.json）
+config.json
+# 面板外观（背景图是主人的个人数据，不入库）
+ui.json
+/assets/
+# 探测/用量数据
+probe_results.jsonl
+usage.jsonl
+usage.sqlite3*
+# 日志与缓存
+logs/
+__pycache__/
+*.pyc
+# 备份文件
+*.bak.*
+.DS_Store
+# 本地临时证据/截图工作区（不进公开树）
+docs/_tmp*

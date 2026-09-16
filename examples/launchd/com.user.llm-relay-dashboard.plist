@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  这是仓库里的**模板**，不含任何个人路径。用法：
+    1. 替换占位符：@PYTHON@=解释器绝对路径（如 ~/hindsight-mac-env/bin/python 展开后的路径）、
+       @REPO@=仓库根目录、@LOGDIR@=日志目录、@HOME@=$HOME；
+    2. cp 替换后的文件到 ~/Library/LaunchAgents/com.user.llm-relay-dashboard.plist；
+    3. bootout + bootstrap（见下）。
+
+  com.user.llm-relay-dashboard.plist —— llm-relay 管理面板的 launchd 定义（仓库内留档）。
+  安装：launchctl bootout gui/$(id -u)/com.user.llm-relay-dashboard 2>/dev/null
+        launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.user.llm-relay-dashboard.plist
+  改环境变量后必须 bootout + bootstrap（只 kickstart 不生效）。
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.llm-relay-dashboard</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>@PYTHON@</string>
+        <string>@REPO@/llm-relay-dashboard.py</string>
+        <string>--host</string>
+        <string>0.0.0.0</string>
+        <string>--port</string>
+        <string>9111</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>@REPO@</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>@LOGDIR@/llm-relay-dashboard.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>@LOGDIR@/llm-relay-dashboard.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin</string>
+        <key>NO_PROXY</key>
+        <string>localhost,127.0.0.1,::1</string>
+        <key>no_proxy</key>
+        <string>localhost,127.0.0.1,::1</string>
+        <key>HOME</key>
+        <string>@HOME@</string>
+    </dict>
+</dict>
+</plist>

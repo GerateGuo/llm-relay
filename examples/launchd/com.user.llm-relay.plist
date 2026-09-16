@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.user.llm-relay.plist —— llm-relay 中转站本体的 launchd 常驻模板（macOS）。
+
+  这是**模板**，不含任何个人路径。用法：
+    1. 替换占位符：@PYTHON@=解释器绝对路径（如 $(which python3) 展开后的路径）、
+       @REPO@=仓库根目录、@LOGDIR@=日志目录、@HOME@=$HOME；
+    2. cp 替换后的文件到 ~/Library/LaunchAgents/com.user.llm-relay.plist；
+    3. launchctl bootout gui/$(id -u)/com.user.llm-relay 2>/dev/null
+       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.user.llm-relay.plist
+
+  要点：
+    - RunAtLoad + KeepAlive：开机自启，退出即自动拉起；
+    - NO_PROXY / no_proxy 必须包含回环地址，否则本地代理（ClashX 等）会把 127.0.0.1 的请求
+      变成 502 —— 这是最常见的「明明服务活着却连不上」成因；
+    - 改环境变量后必须 bootout + bootstrap 才生效（只 kickstart 不生效）。
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.user.llm-relay</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>@PYTHON@</string>
+        <string>@REPO@/llm_relay.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>@REPO@</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>@LOGDIR@/llm-relay.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>@LOGDIR@/llm-relay.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin</string>
+        <key>NO_PROXY</key>
+        <string>localhost,127.0.0.1,::1</string>
+        <key>no_proxy</key>
+        <string>localhost,127.0.0.1,::1</string>
+        <key>HOME</key>
+        <string>@HOME@</string>
+    </dict>
+</dict>
+</plist>

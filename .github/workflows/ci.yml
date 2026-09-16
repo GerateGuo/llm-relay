@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Syntax gate
+        run: python -m py_compile llm_relay.py llm-relay-dashboard.py mock_provider.py test_relay.py scripts/sanitize_check.py dev/dashboard_smoke_test.py
+      - name: Unit tests
+        run: python -m unittest test_relay
+
+  hygiene:
+    name: hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Credential guard
+        run: |
+          if git ls-files | grep -Ei '(^|/)(access-key(\.txt)?|\.env[^/]*|secrets?|credentials?)(\.|$)'; then
+            echo "::error::A credential-looking file is tracked in the repository; remove it from the public tree."
+            exit 1
+          else
+            echo "OK: no credential files tracked."
+          fi
+      - name: Personal-trace / plaintext-key guard
+        run: python3 scripts/sanitize_check.py
+      - name: Config example check
+        run: python3 llm_relay.py --check --config config.example.json

@@ -1,0 +1,173 @@
+{
+  "_comment": "llm-relay 示例配置（python3 llm_relay.py --init 会把它复制成 config.json）。这里只有中性示例：真实厂商地址/模型名/密钥/调参请自己填；keys 里写的是「环境变量名」，真实值放 keys.env（已 gitignore）。可选的「上游集成」段（integrations.upstream）故意不在这里出现，用法见 examples/hindsight/README.md。`auth`/`callers` 是调用方鉴权与配额：auth.mode 默认 loopback_trust（本机免密），callers 里的 key 请一律用 key_env 指向 keys.env（内联 key 只留给不入库的 config.json）。",
+  "listen": {
+    "host": "127.0.0.1",
+    "port": 9110
+  },
+  "local_token": "",
+  "default_alias": "default",
+  "auth": {
+    "mode": "loopback_trust"
+  },
+  "callers": {
+    "example-app": {
+      "key_env": "RELAY_CALLER_EXAMPLE",
+      "rpm": 60,
+      "daily_tokens": 2000000,
+      "allow_routes": [
+        "default",
+        "example-cheap"
+      ],
+      "note": "示例：本机应用用 Authorization: Bearer $RELAY_CALLER_EXAMPLE 认领这个身份；key 只写 keys.env，别写进 config.json 提交。"
+    }
+  },
+  "request": {
+    "per_attempt_timeout_s": 60,
+    "reasoning_min_timeout_s": 45,
+    "total_budget_s": 110,
+    "min_attempts_within_budget": 2,
+    "max_candidates": 3,
+    "queue_timeout_s": 30,
+    "validate_json": true,
+    "json_extract_fallback": true,
+    "schema_min_max_tokens": 1024,
+    "provider_cooldown_cap_s": 120,
+    "provider_cooldown_hard_cap_s": 300,
+    "provider_failure_window_s": 300,
+    "provider_escalate_after_failures": 3
+  },
+  "concurrency": {
+    "global": 8
+  },
+  "usage_log": {
+    "enabled": true,
+    "path": "~/.hermes/llm-relay/usage.jsonl",
+    "max_mb": 20,
+    "keep": 5
+  },
+  "key_state": {},
+  "providers": [
+    {
+      "name": "example-openai",
+      "enabled": true,
+      "base_url": "https://api.example.com/v1",
+      "wire": {
+        "max_tokens_param": "max_tokens",
+        "extra_headers": {}
+      },
+      "keys": [
+        "EXAMPLE_OPENAI_KEY"
+      ],
+      "rpm": 10,
+      "rpm_note": "示例值：按你要用的免费档实测校准；本地 rpm 限流到点会排队/退避，不会放行给上游。",
+      "max_concurrency": 2,
+      "key_cooldown_s": 120,
+      "provider_cooldown_s": 180,
+      "cooldown_backoff": {
+        "initial_s": 60,
+        "max_s": 900,
+        "factor": 2
+      },
+      "models": [
+        {
+          "id": "example-chat",
+          "chain": 10,
+          "caps": {
+            "json_schema": "native",
+            "tools": true,
+            "reasoning_only": false
+          },
+          "params": {}
+        },
+        {
+          "id": "example-reasoner",
+          "chain": 20,
+          "caps": {
+            "json_schema": "degradable",
+            "tools": true,
+            "reasoning_only": true
+          },
+          "params": {
+            "strip_temperature": true,
+            "max_tokens_multiplier": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "local-mock",
+      "enabled": true,
+      "free": true,
+      "base_url": "http://127.0.0.1:9199/v1",
+      "wire": {
+        "max_tokens_param": "max_tokens",
+        "extra_headers": {}
+      },
+      "keys": [
+        "LOCAL_MOCK_KEY"
+      ],
+      "rpm": 60,
+      "rpm_note": "本地假源没有配额（也不会花钱），示例值给宽一点，并显式 free:true —— 「免费」必须由主人显式确认，中转站绝不替谁猜；起法见 mock_provider.py 的文件头。",
+      "max_concurrency": 4,
+      "key_cooldown_s": 30,
+      "provider_cooldown_s": 60,
+      "cooldown_backoff": {
+        "initial_s": 30,
+        "max_s": 300,
+        "factor": 2
+      },
+      "models": [
+        {
+          "id": "mock-ok",
+          "chain": 90,
+          "caps": {
+            "json_schema": "native",
+            "tools": true,
+            "reasoning_only": false
+          },
+          "params": {}
+        },
+        {
+          "id": "mock-json",
+          "chain": 91,
+          "caps": {
+            "json_schema": "native",
+            "tools": false,
+            "reasoning_only": false
+          },
+          "params": {}
+        }
+      ]
+    }
+  ],
+  "local_fallback": {
+    "enabled": false,
+    "base_url": "http://127.0.0.1:8080/v1",
+    "model": "local-model",
+    "window": "01:00-07:00",
+    "health_check_path": "/models",
+    "autostart": false
+  },
+  "routes": {
+    "default": {
+      "chain": "auto",
+      "policy": {}
+    },
+    "example-cheap": {
+      "chain": "auto",
+      "policy": {
+        "free_only": true,
+        "max_candidates": 2
+      }
+    },
+    "example-explicit": {
+      "chain": [
+        "example-openai/example-chat",
+        "local-mock/mock-ok"
+      ],
+      "policy": {
+        "validate_json": true
+      }
+    }
+  }
+}

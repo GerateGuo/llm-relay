@@ -12,6 +12,10 @@ loopback only:
 - relay: `127.0.0.1:9110`
 - dashboard: `127.0.0.1:9111`
 
+Binding either of them to a LAN interface is an explicit choice (`--host 0.0.0.0`). Non-loopback
+dashboard visitors still need the access key and remain read-only, but you are the one widening
+the surface — a container or NAS deployment is the usual way this leaks, so do it deliberately.
+
 There is **no TLS**, **no multi-tenancy**, and the project is **not designed to
 be exposed to the public internet**. If you choose to expose it publicly, you
 must put your own reverse proxy and authentication layer in front of it. That

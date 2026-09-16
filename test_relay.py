@@ -2006,6 +2006,28 @@ class RelayTestCase(unittest.TestCase):
         status, body, _ = relay.chat(self.ask())
         self.assertEqual(status, 200, body)
 
+    def test_108_doc_comment_keys_are_ignored_silently(self):
+        """文档注释键（以 `_` 开头，config.example.json 靠它写说明）→ 静默忽略，**不产生校验问题**。
+
+        回归守卫：这类键曾经被当成「字段名拼错」报出来，于是 `--check` 对自带示例配置也吐警告，
+        CI 里的示例体检步骤永远带着噪声。静默忽略是刻意行为，不是没校验。
+        """
+        def mutate(cfg):
+            cfg["_comment"] = "顶层说明"
+            cfg["usage_log"]["_comment"] = "段落说明"
+            cfg["request"]["_note"] = 42
+
+        relay = self.t1_5_relay(mutate)
+        got = self.t1_5_issues(relay)
+        noisy = [p for p in got if "_comment" in p or "_note" in p]
+        self.assertEqual(noisy, [], f"文档注释键不该产生校验问题：{relay.config_issues}")
+        for key in ("_comment", "_note"):
+            self.assertNotIn(key, relay.cfg, "顶层注释键应从工作配置里剔除")
+        self.assertNotIn("_comment", relay.cfg.get("usage_log", {}))
+        self.assertNotIn("_note", relay.cfg.get("request", {}))
+        status, body, _ = relay.chat(self.ask())
+        self.assertEqual(status, 200, body)
+
     def test_98_config_wrong_type_falls_back_and_disables_provider(self):
         """T1.5②：类型不对 → 可读错误 + 回退默认；坏 provider 被禁用，不抛裸 TypeError 栈。"""
         def mutate(cfg):

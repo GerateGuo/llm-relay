@@ -108,7 +108,7 @@
         "LOCAL_MOCK_KEY"
       ],
       "rpm": 60,
-      "rpm_note": "本地假源没有配额（也不会花钱），示例值给宽一点，并显式 free:true —— 「免费」必须由主人显式确认，中转站绝不替谁猜；起法见 mock_provider.py 的文件头。",
+      "rpm_note": "本地假源没有配额（也不会花钱），示例值给宽一点，并显式 free:true —— 「免费」必须由部署者显式确认，中转站绝不替谁猜；起法见 mock_provider.py 的文件头。",
       "max_concurrency": 4,
       "key_cooldown_s": 30,
       "provider_cooldown_s": 60,

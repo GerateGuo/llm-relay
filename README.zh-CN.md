@@ -5,6 +5,7 @@
 **一个文件、零依赖，把一堆厂商和它们的免费额度收拢成一条 OpenAI 兼容接口。**
 
 [![CI](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml)
+![release](https://img.shields.io/github/v/release/GerateGuo/llm-relay)
 ![license: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![python: 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 
@@ -93,11 +94,12 @@ curl -s http://127.0.0.1:9110/v1/chat/completions \
 `model` 是**路由名**（默认 `default`，可通过 `default_alias` 改），或者精确的
 `provider/model`。`GET /v1/models` 会把两者都列出来，并带上各自的 `chain` 与当前可用性。
 
-需要面板时（默认监听 `0.0.0.0`；非本机访问需要访问密钥且只读）：
+需要面板时，它和中继一样**默认只监听回环**；要手机/局域网访问得显式写 `--host 0.0.0.0`
+（那种情况下非本机来源仍需访问密钥，且默认只读）：
 
 ```bash
 python3 llm-relay-dashboard.py                 # http://127.0.0.1:9111
-python3 llm-relay-dashboard.py --host 127.0.0.1
+python3 llm-relay-dashboard.py --host 0.0.0.0  # 手机/局域网，需要访问密钥
 ```
 
 不需要 pip 安装、不需要数据库、不需要构建。Python 3.9 起。

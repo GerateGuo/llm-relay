@@ -47,6 +47,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+# 版本号：`--version` 与 HTTP Server 头都用它，便于确认线上跑的是哪一版。
+VERSION = "0.1.0"
+
 DEFAULT_CONFIG = HERE / "config.json"
 DEFAULT_KEYS = HERE / "keys.env"
 CONFIG_EXAMPLE = HERE / "config.example.json"
@@ -1519,7 +1522,8 @@ def validate_config(cfg: object, keys_raw: dict | None = None) -> tuple[dict, li
 
     def unknown(prefix: str, obj: dict, allowed: list[str]) -> None:
         for k in list(obj):
-            # 以 `_` 开头的键是文档/注释（config.example.json 就靠它写说明）→ 静默忽略，不算问题
+            # 以 `_` 开头的键是文档/注释（config.example.json 就靠它写说明）→ 静默忽略、不算问题。
+            # 回归测试：test_108_doc_comment_keys_are_ignored_silently
             if isinstance(k, str) and k.startswith("_"):
                 obj.pop(k, None)
                 continue
@@ -1944,7 +1948,7 @@ class Relay:
                     val = keys_raw.get(env, "")
                     ks = KeySlot(env_name=env, value=val, index=i)
                     if not val:
-                        # keys.env 里还没这一行 → 占位但不可用；主人追加一行后热重载即生效
+                        # keys.env 里还没这一行 → 占位但不可用；部署者追加一行后热重载即生效
                         ks.disabled = True
                         ks.disabled_reason = "keys.env 中未定义或为空"
                     prev = old_key_map.get(env)
@@ -2127,7 +2131,7 @@ class Relay:
 
         兼容优先：**根本没配 `callers`（或空表）时，Authorization 一律忽略**（认成 anonymous）——
         这正是「缺失 callers 段 = 行为逐项等于今天」，Hindsight 那个 `Bearer local-relay` 不会因为
-        主人删掉 callers 段而被 401。只有显式配了 caller 才启用「不认识就 401」。
+        部署者删掉 callers 段而被 401。只有显式配了 caller 才启用「不认识就 401」。
         """
         got = str(authorization or "").strip()
         token = got[7:].strip() if got.lower().startswith("bearer ") else ""
@@ -2355,7 +2359,7 @@ class Relay:
                     kept_free.append(c)
                 else:
                     skip(f"{c.provider}/{c.model_id}", c.chain,
-                         "free_only：未显式标记 free=true（免费与否需主人确认）")
+                         "free_only：未显式标记 free=true（免费与否需部署者确认）")
             picked = kept_free
 
         if isinstance(chain_spec, list):
@@ -2986,7 +2990,7 @@ class Relay:
         marks: list[str] = []
         reasons = [str(s[2]) for s in (info.get("skipped") or [])]
         if any("free_only" in r for r in reasons):
-            marks.append("free_only 只保留显式 free=true 的候选，当前 0 个（其余 provider 待主人确认免费标记）")
+            marks.append("free_only 只保留显式 free=true 的候选，当前 0 个（其余 provider 待部署者确认免费标记）")
         unknown = [str(s[0]) for s in (info.get("skipped") or []) if "不存在" in str(s[2])]
         if unknown:
             marks.append("显式 chain 里不存在的模型：" + "、".join(unknown))
@@ -4393,7 +4397,7 @@ class RelayHTTPServer(ThreadingHTTPServer):
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "llm-relay/1.0"
+    server_version = f"llm-relay/{VERSION}"
     protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):  # 由 relay.log 统一记录
@@ -4709,6 +4713,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--keys", default=str(DEFAULT_KEYS))
     ap.add_argument("--host", default=None)
     ap.add_argument("--port", type=int, default=None)
+    ap.add_argument("--version", action="version", version=f"llm-relay {VERSION}")
     ap.add_argument("--check", action="store_true", help="只做配置体检并打印候选，不起服务")
     ap.add_argument("--init", action="store_true",
                     help="用 config.example.json 生成一份本地配置（已存在则拒绝覆盖），然后退出")

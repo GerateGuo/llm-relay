@@ -5,6 +5,7 @@
 **One file, no dependencies, one OpenAI-compatible endpoint in front of many providers and their free tiers.**
 
 [![CI](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml/badge.svg)](https://github.com/GerateGuo/llm-relay/actions/workflows/ci.yml)
+![release](https://img.shields.io/github/v/release/GerateGuo/llm-relay)
 ![license: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![python: 3.9+](https://img.shields.io/badge/python-3.9%2B-blue)
 
@@ -105,12 +106,13 @@ curl -s http://127.0.0.1:9110/v1/chat/completions \
 `provider/model` pair. `GET /v1/models` lists both, together with each model's `chain` and current
 availability.
 
-Optionally start the dashboard (default `0.0.0.0`, access-key gated and read-only from non-loopback
-addresses):
+Optionally start the dashboard. It binds **loopback only** by default, exactly like the relay;
+binding it to a LAN interface is a deliberate act (`--host 0.0.0.0`) — non-loopback visitors then
+still need the access key and stay read-only:
 
 ```bash
 python3 llm-relay-dashboard.py                 # http://127.0.0.1:9111
-python3 llm-relay-dashboard.py --host 127.0.0.1
+python3 llm-relay-dashboard.py --host 0.0.0.0  # LAN / phone, access key required
 ```
 
 No pip install, no database, no build step. Python 3.9 or newer.

@@ -5,7 +5,7 @@
 架构（TASK-DASHBOARD §1）：
 
     手机/局域网/Tailscale ─┐
-                           ├─> 本面板 :9111（0.0.0.0，访问密钥门，读写分流）
+                           ├─> 本面板 :9111（默认 127.0.0.1；--host 0.0.0.0 才对外，密钥门+读写分流）
     本机浏览器 ────────────┘        │  服务端代理（ProxyHandler({}) 绕代理）
                                     ↓
                               llm-relay :9110（127.0.0.1，状态唯一拥有者）
@@ -41,6 +41,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+# 版本号：`--version` 与 HTTP Server 头都用它。
+VERSION = "0.1.0"
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RELAY_BASE = os.getenv("LLM_RELAY_BASE", "http://127.0.0.1:9110").rstrip("/")
@@ -2098,7 +2101,7 @@ POST_API = {
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "llm-relay-dashboard/1.0"
+    server_version = f"llm-relay-dashboard/{VERSION}"
     protocol_version = "HTTP/1.1"
     access_key = ""   # 非空时，非本机访问必须携带密钥（?k= 或 cookie）
     allow_remote_write = False   # 默认电话/局域网只读
@@ -2317,8 +2320,12 @@ class Handler(BaseHTTPRequestHandler):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="llm-relay 管理前端（单文件、纯标准库）")
-    ap.add_argument("--host", default="0.0.0.0", help="监听地址（默认 0.0.0.0，手机/局域网可看）")
+    # 默认只听回环（与中继一致）：要手机/局域网访问必须**显式**写 --host 0.0.0.0（非回环来源仍需
+    # 访问密钥，且默认只读）。一个本机运维面板默认对外，等于把内网当信任边界 —— 不该是默认值。
+    ap.add_argument("--host", default="127.0.0.1",
+                    help="监听地址（默认 127.0.0.1 仅本机；手机/局域网访问要显式写 --host 0.0.0.0）")
     ap.add_argument("--port", type=int, default=9111)
+    ap.add_argument("--version", action="version", version=f"llm-relay-dashboard {VERSION}")
     ap.add_argument("--key-file", default=DEFAULT_KEY_FILE, help="访问密钥文件（不存在则生成，600）")
     ap.add_argument("--relay", default=None, help="中转站地址，默认 http://127.0.0.1:9110")
     ap.add_argument("--allow-remote-write", action="store_true",

@@ -9,7 +9,7 @@
   · 任何输出（含失败信息）都不打印 key 明文，只出现变量名与 sha256 前 8 位指纹。
 
 跑法：
-    cd <repo>            # 例如 ~/.hermes/llm-relay
+    cd <repo>            # 例如 <部署目录>
     ~/hindsight-mac-env/bin/python dashboard_smoke_test.py -v
 """
 from __future__ import annotations
@@ -1353,7 +1353,7 @@ class SmokeTest(unittest.TestCase):
         # ③ 既有 provider 的 rpm / 档位一个都没动 —— 与**测试开始处**的快照做前后对比，
         #    和上面 request.* 用的是同一套写法：`before` 就是跑 add/update/remove 之前
         #    那次读盘的结果。不写死任何 provider 名 / 模型 id / 档位数字：
-        #    主人随时会在面板上加/删模型，写死清单必然反复变红。
+        #    部署者随时会在面板上加/删模型，写死清单必然反复变红。
         def _rpm_and_tier(cfg: dict) -> tuple:
             """provider 名 → rpm；provider 名 → 该 provider 全部模型 chain 的**最小值**（『档位』）。"""
             rpms, tiers = {}, {}
@@ -1387,7 +1387,7 @@ class SmokeTest(unittest.TestCase):
                              f"{name} 的每个模型 chain 都不许被模型管理接口改动")
         # ③-c provider 之间的档位**相对顺序**与快照一致（如 sensenova < zen < stepfun < deepseek）；
         #      允许并列（用 provider 名决胜）。只比较顺序，不要求任何具体数值等于 40/45/50 ——
-        #      数值可被主人在面板上调，顺序不可被模型增删改。
+        #      数值可被部署者在面板上调，顺序不可被模型增删改。
         self.assertEqual(_tier_order({n: tier1[n] for n in tier0}), _tier_order(tier0),
                          "provider 之间的档位相对顺序必须与测试开始时一致")
         # ③′ 不变式（对任何模型组合都成立，不引用任何外部会变的模型 id）：
@@ -1575,7 +1575,7 @@ class SmokeTest(unittest.TestCase):
     def test_23_key_pool_ui_interactions(self):
         """第 23 组：Key 池交互 —— 用 CDP 真点，专门抓「静态检查测不出来」的那类 bug。
 
-        起因（主人 2026-09-14 报障）：①「替换」点了像没反应 ②点「删除」不会跳到输入 REMOVE 的地方
+        起因（2026-09-14 报障）：①「替换」点了像没反应 ②点「删除」不会跳到输入 REMOVE 的地方
         ③「追加新 key」输入到一半点别处就没了。
         根因都不是后端：`renderKeys()` 整体重建 `#view`，表单状态被冲掉；表单还渲染在页面最顶部，
         在下面表格点按钮时它在视口外（看起来就是「按钮没反应」）。
@@ -1954,7 +1954,7 @@ class SmokeTest(unittest.TestCase):
         self.assertIsNot(on.get("configured"), False, on)
         for k in ("api", "cp", "stats", "relay_usage"):
             self.assertIn(k, on, on)
-        # 2) 摘掉 integrations，热重载（线上 ~/.hermes/llm-relay/config.json 一个字都不碰）
+        # 2) 摘掉 integrations，热重载（线上 <部署目录>/config.json 一个字都不碰）
         cfg = self.disk_config()
         cfg.pop("integrations", None)
         self.write_config(cfg)
@@ -2415,12 +2415,17 @@ def chrome_screenshot(url: str, out: Path, width: int, height: int,
 
 
 def _targets_usage_and_logs() -> list:
-    home = Path(os.path.expanduser("~"))
-    targets: list = list((home / ".hermes/llm-relay").glob("usage.jsonl"))
-    targets += list((home / ".hermes/llm-relay").glob("usage.jsonl.*"))
-    targets += list((home / ".hermes/logs").glob("llm-relay-dashboard*.log"))
-    targets += list((home / ".hermes/logs").glob("llm-relay.log"))
-    targets += list((home / ".hermes/logs").glob("llm-relay.err.log"))
+    """收尾清洁的目标：① 仓库里的自检产物；② 可选的外部部署目录（用环境变量显式指定）。
+
+    刻意不写死任何个人路径：自检跑在自己的仓库里就扫 `ROOT/usage.jsonl*`；
+    线上部署另有目录时用 `LLM_RELAY_DEPLOY_DIR=<部署目录>` 显式带进来（日志目录同理）。
+    """
+    targets: list = list(ROOT.glob("usage.jsonl")) + list(ROOT.glob("usage.jsonl.*"))
+    deploy = os.environ.get("LLM_RELAY_DEPLOY_DIR")
+    if deploy:
+        d = Path(os.path.expanduser(deploy))
+        targets += list(d.glob("usage.jsonl")) + list(d.glob("usage.jsonl.*"))
+        targets += list(d.glob("*.log"))
     targets += list(HERE.glob("*.log")) + list(DOCS.glob("*.log"))
     return [t for t in targets if t.is_file()]
 
@@ -2442,9 +2447,10 @@ def scan_for_secrets() -> list:
             for i, line in enumerate(text.splitlines(), 1):
                 if pat in line:
                     hits.append(f"{t.name}:{i}")
-    # 真实 key 值（只用于比对，绝不打印）
+    # 真实 key 值（只用于比对，绝不打印）：默认看仓库/部署目录里的 keys.env，
+    # 想扫另一份部署就显式给 LLM_RELAY_DEPLOY_DIR —— 不写死任何个人路径。
     real_values: list[str] = []
-    keys_env = Path(os.path.expanduser("~/.hermes/llm-relay/keys.env"))
+    keys_env = Path(os.path.expanduser(os.environ.get("LLM_RELAY_DEPLOY_DIR") or ROOT)) / "keys.env"
     try:
         for line in keys_env.read_text(encoding="utf-8", errors="replace").splitlines():
             line = line.strip()

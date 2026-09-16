@@ -1,0 +1,36 @@
+# llm-relay —— 两个服务，一个数据目录。
+#
+#   mkdir -p data && cp ../../config.example.json data/config.json
+#   $EDITOR data/config.json      # 填上游；keys 里写「环境变量名」
+#   $EDITOR data/keys.env         # KEY_NAME=值（chmod 600）
+#   docker compose up -d
+#
+# 端口默认只发布到宿主机回环（127.0.0.1），跟服务自身的默认姿态一致；
+# 要手机/局域网访问，把 dashboard 那行改成 "0.0.0.0:9111:9111"（那时访问密钥是唯一的门）。
+services:
+  relay:
+    build: .
+    image: llm-relay:local
+    command: ["python", "llm_relay.py", "--config", "/data/config.json",
+              "--keys", "/data/keys.env", "--host", "0.0.0.0"]
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:9110:9110"
+    restart: unless-stopped
+    # Linux/NAS 上如果提示写不了 /data：把数据目录交给容器里的 uid
+    #   sudo chown -R 10001:10001 data
+    # 或者在这里显式对齐宿主机用户：user: "1000:1000"
+
+  dashboard:
+    image: llm-relay:local
+    depends_on: [relay]
+    # 容器内一律 --host 0.0.0.0（服务默认只听回环，容器里的回环没用）；
+    # 对外暴露与否由上面的 ports 决定。
+    command: ["python", "llm-relay-dashboard.py", "--host", "0.0.0.0", "--port", "9111",
+              "--key-file", "/data/access-key.txt", "--relay", "http://relay:9110"]
+    volumes:
+      - ./data:/data
+    ports:
+      - "127.0.0.1:9111:9111"
+    restart: unless-stopped

@@ -332,6 +332,9 @@ python3 mock_provider.py --port 9199 --scenario rate_limit      # then point a p
 
 - [`examples/launchd/`](examples/launchd/) — launchd templates for keeping the relay (and the
   dashboard) alive on macOS. Replace the placeholders, install, done.
+- [`examples/docker/`](examples/docker/) — run it as a container (Dockerfile + compose; ports are published
+  to the host loopback by default). Aimed at NAS / container users — the plain `python3 llm_relay.py`
+  path stays the main one.
 - [`examples/hindsight/`](examples/hindsight/) — using the relay in front of an agent memory service:
   an `integrations.upstream` snippet, its dashboard tab, and a rollback script. Optional; the core
   never depends on it.

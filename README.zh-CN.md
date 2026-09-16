@@ -307,6 +307,8 @@ python3 mock_provider.py --port 9199 --scenario rate_limit      # 然后把某�
 
 - [`examples/launchd/`](examples/launchd/) —— macOS 上用 launchd 常驻中继（和面板）的模板。
   替换占位符、装到 `~/Library/LaunchAgents/` 即可。
+- [`examples/docker/`](examples/docker/) —— 用容器跑（Dockerfile + compose，端口默认只发布到宿主机回环）。
+  面向 NAS / 习惯用容器的人；主路径仍然是 `python3 llm_relay.py`。
 - [`examples/hindsight/`](examples/hindsight/) —— 把中继放在一个 agent 记忆服务前面：
   `integrations.upstream` 片段、它对应的面板 tab，以及回滚脚本。可选，核心不依赖它。
 
